@@ -24,6 +24,7 @@ object SchoolModel:
      * @return the teacher created
      */
     def teacher(name: String): Teacher
+    
     /**
      * This a factory method for create a course from a name
      * e.g.,
@@ -45,6 +46,7 @@ object SchoolModel:
     def emptySchool: School
     
     extension (school: School)
+      
       /**
        * This method should return the list of courses
        * e.g.,
@@ -57,6 +59,7 @@ object SchoolModel:
        * @return the list of courses
        */
       def courses: Sequence[String]
+      
       /**
        * This method should return the list of teachers
        * e.g.,
@@ -70,6 +73,7 @@ object SchoolModel:
        * @return the list of teachers
        */
       def teachers: Sequence[String]
+      
       /**
        * This method should return a new school with the teacher assigned to the course
        * e.g.,
@@ -77,6 +81,7 @@ object SchoolModel:
        *   .setTeacherToCourse(teacher("John"), course("Math")) // => School(courses = Cons("Math", Nil()), teachers = Cons("John", Nil()), teacherToCourses = Cons(("John", "Math"), Nil()))
        *  */
       def setTeacherToCourse(teacher: Teacher, course: Course): School
+      
       /**
        * This method should return the list of courses assigned to a teacher
        * e.g.,
@@ -91,6 +96,7 @@ object SchoolModel:
        * @return the list of courses assigned to a teacher
        */
       def coursesOfATeacher(teacher: Teacher): Sequence[Course]
+      
       /**
        * This method should return true if the teacher is present in the school
        * e.g.,
@@ -101,6 +107,7 @@ object SchoolModel:
        *
        */
       def hasTeacher(name: String): Boolean
+      
       /**
        * This method should return true if the course is present in the school
        * e.g.,
@@ -111,44 +118,53 @@ object SchoolModel:
        *
        */
       def hasCourse(name: String): Boolean
+      
   object BasicSchoolModule extends SchoolModule:
-    override type School = Nothing
-    override type Teacher = Nothing
-    override type Course = Nothing
+    override type School = BasicSchool
+    override type Teacher = BasicTeacher
+    override type Course = BasicCourse
 
-    def teacher(name: String): Teacher = ???
-    def course(name: String): Course = ???
-    def emptySchool: School = ???
+    def teacher(name: String): Teacher = BasicTeacher(name)
+    def course(name: String): Course = BasicCourse(name)
+    def emptySchool: School = BasicSchool(Nil(), Nil(), Nil())
 
     extension (school: School)
-      def courses: Sequence[String] = ???
-      def teachers: Sequence[String] = ???
-      def setTeacherToCourse(teacher: Teacher, course: Course): School = ???
-      def coursesOfATeacher(teacher: Teacher): Sequence[Course] = ???
-      def hasTeacher(name: String): Boolean = ???
-      def hasCourse(name: String): Boolean = ???
-@main def examples(): Unit =
-  import SchoolModel.BasicSchoolModule.*
-  val school = emptySchool
-  println(school.teachers) // Nil()
-  println(school.courses) // Nil()
-  println(school.hasTeacher("John")) // false
-  println(school.hasCourse("Math")) // false
-  val john = teacher("John")
-  val math = course("Math")
-  val italian = course("Italian")
-  val school2 = school.setTeacherToCourse(john, math)
-  println(school2.teachers) // Cons("John", Nil())
-  println(school2.courses) // Cons("Math", Nil())
-  println(school2.hasTeacher("John")) // true
-  println(school2.hasCourse("Math")) // true
-  println(school2.hasCourse("Italian")) // false
-  val school3 = school2.setTeacherToCourse(john, italian)
-  println(school3.teachers) // Cons("John", Nil())
-  println(school3.courses) // Cons("Math", Cons("Italian", Nil()))
-  println(school3.hasTeacher("John")) // true
-  println(school3.hasCourse("Math")) // true
-  println(school3.hasCourse("Italian")) // true
-  println(school3.coursesOfATeacher(john)) // Cons("Math", Cons("Italian", Nil()))
+      def courses: Sequence[String] = school match
+        case BasicSchool(_, c, _) => c.map {
+          case BasicCourse(name) => name
+          case _ => ""
+        }.distinct()
+        case _ => Nil()
+        
+      def teachers: Sequence[String] = school match
+        case BasicSchool(t, _, _) => t.map {
+          case BasicTeacher(name) => name
+          case _ => ""
+        }.distinct()
+        case _ => Nil()
 
+      def setTeacherToCourse(teacher: Teacher, course: Course): School = school match
+        case BasicSchool(t, c, tc) => BasicSchool(t.append(teacher), c.append(course), tc.append((teacher, course)))
+        case _ => emptySchool
+        
+      def coursesOfATeacher(teacher: Teacher): Sequence[Course] =
+        def helper(teacherCourses: Sequence[(Teacher, Course)]): Sequence[Course] = teacherCourses match
+          case Cons((t, c), other) => if t == teacher then Cons(c, helper(other)) else helper(other)
+          case _ => Nil()
+        school match
+          case BasicSchool(_, _, tc) => helper(tc)
+          case _ => Nil()
 
+      def hasTeacher(name: String): Boolean = school match
+        case BasicSchool(t, _, _) => t.map {
+          case BasicTeacher(name) => name
+          case _ => ""
+        }.contains(name)
+        case _ => false
+        
+      def hasCourse(name: String): Boolean = school match
+        case BasicSchool(_, c, _) => c.map {
+          case BasicCourse(name) => name
+          case _ => ""
+        }.contains(name)
+        case _ => false
